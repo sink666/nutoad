@@ -1,0 +1,6 @@
+* groundwork
+** TODO arrays
+** TODO dictionary
+** TODO file input
+** TODO main loop to eat up the file
+** TODO figure out a distinction between builtins and user-defined commands
