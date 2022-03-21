@@ -1,0 +1,27 @@
+* a new version of toadskin in lua; cross-compatible with standard brainfuck
+** the outer interpreter loop
+   'quit' is the compontent of a forth that checks for input and then fires
+   'interpret', 'interpret' looks at whatever it just got and tries to look it
+   up in the dictionary, or convert it to a number and push it to the stack.
+   it'll error out if it can't do anything.
+** how brainfuck works
+   brainfuck is a command tape and a mutable result tape. there's a read head
+   that jumps around the command tape executing commands. there's a r/w head
+   that writes to the result tape which you can poll for the currently
+   addressed index's ascii value
+** how to create a brainfuck in a forth-y way
+   I don't want to have an interactive toadskin. i just want to feed it files.
+   the tapes would remain. but basic functions would be built around a
+   dictionary and an interpreter something like a classic forth
+*** loop idea
+    EOF? exit
+    fire 'interpret' with arg 'comp' or 'exec' dependent on 'mode' state
+    exec:
+      look up word in dictionary; if word is ':', set 'mode' end 'interpret'
+      if no matching word is found, error out, otherwise, execute 
+      end 'interpret'
+    comp:
+      if ';', we're done compiling, end 'interpret'
+      add whatever is at the pointer and valid to the new def
+      end 'interpret'
+    move the tape head along
