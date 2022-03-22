@@ -1,6 +1,8 @@
 * groundwork
-** TODO arrays
-** TODO dictionary
+** DONE arrays
+   CLOSED: [2022-03-22 Tue 14:32]
+** DONE dictionary
+   CLOSED: [2022-03-22 Tue 14:32]
 ** TODO file input
 ** TODO main loop to eat up the file
 ** TODO figure out a distinction between builtins and user-defined commands
