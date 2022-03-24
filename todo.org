@@ -1,8 +1,16 @@
 * groundwork
-** DONE arrays
+** DONE array
    CLOSED: [2022-03-22 Tue 14:32]
 ** DONE dictionary
    CLOSED: [2022-03-22 Tue 14:32]
 ** TODO file input
-** TODO main loop to eat up the file
+** DONE main loop to eat up the input tape -- ish
+   CLOSED: [2022-03-24 Thu 22:45]
+** DONE basic input
+   CLOSED: [2022-03-24 Thu 22:45]
+** TODO actually change the state of the array
+** TODO read from the array
+** TODO underflow and overflow
+** TODO wraparound?
+** TODO colon definitions
 ** TODO figure out a distinction between builtins and user-defined commands
