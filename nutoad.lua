@@ -63,4 +63,12 @@ for i = 1, #commands do
 end
 
 -- builtin_dictionary[i].func("test")
+-- threading idea; just check the type of a function in the dictionary
+-- if it's a string we know for sure it's brainfuck. otherwise it's a builtin
 
+-- method for matching [] could be simple
+-- in cristofani's simple brainfuck interpreter, there's a 'targets' array which
+-- is exactly the same length as the program array.
+-- given an opening brace is at index 7 in the program and a closing brace is
+-- at index 9, the targets array at index 9 will store a '7' and vice versa
+-- the way it uses a stack when reading them in is cute
