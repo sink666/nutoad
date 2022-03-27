@@ -1,7 +1,7 @@
 array = {}
-input = "+++++>>+++++<+++++>-#"
-commands = {}
-pointer = 1
+input = "+++++>>+++++<-#"
+input_bracetest = "+++++[>+++++[-]<]#"
+input3 = "+++++>>-----<<-----#"
 
 -- the recommended size of a brainfuck array
 for i = 1, 30000 do
@@ -39,6 +39,48 @@ function dump_array_state ()
    print(unpack(buffer))
 end
 
+-- extract the commands
+-- in lua you can't just index into a string like in C
+-- so we return a substring at the position (i, i) in the string
+function extract_commands (input)
+   local extract = {}
+
+   for i = 1, #input do
+      extract[i] = input:sub(i, i)
+   end
+
+   return extract
+end
+
+function match_brackets (commands)
+   local stack = {}
+   local stackp = 1
+   local targets = {}
+
+   for i=1, #commands do
+      targets[i] = 0
+      if commands[i] == "[" then
+         stack[stackp] = i
+         stackp = stackp + 1
+      end
+      if commands[i] == "]" then
+         if stackp == 0 then
+            error("Unmatched ']'")
+         else
+            stackp = stackp - 1
+            targets[i] = stack[stackp]
+            targets[stack[stackp]] = i
+         end
+      end
+   end
+
+   if stackp > 1 then
+      error("unmatched '['")
+   end
+
+   return targets
+end
+
 builtin_dictionary = {
    ["#"] = { func = dump_array_state },
    ["+"] = { func = increment_a_at_i },
@@ -48,19 +90,23 @@ builtin_dictionary = {
    [">"] = { func = pointer_move_right },
 }
 
--- extract the commands
--- in lua you can't just index into a string like in C
--- so we return a substring at the position (i, i) in the string
-for i = 1, #input do
-   commands[i] = input:sub(i, i)
-end
+-- test1 = extract_commands(input)
+commandst2 = extract_commands(input_bracetest)
+-- commandst3 = extract_commands(input3)
 
--- for the length of the commands array, address the dictionary by
--- the character i in commands and call its function
+-- match all the brackets
+-- spit into an array the same length of commands
+targetstest2 = match_brackets(commandst2)
 
-for i = 1, #commands do
-   builtin_dictionary[commands[i]].func()
-end
+print(unpack(commandst2))
+print(unpack(targetstest2))
+
+-- the currently addressed command
+-- p = 1
+-- while p < #commandst2 + 1 do
+--    builtin_dictionary[commandst2[p]].func()
+--    p = p + 1
+-- end
 
 -- builtin_dictionary[i].func("test")
 -- threading idea; just check the type of a function in the dictionary
