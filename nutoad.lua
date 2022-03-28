@@ -12,11 +12,11 @@ for i = 1, 30000 do
    state.array[i] = 0
 end
 
-function increment_a_at_i (s)
+function increment_at_point (s)
    s.array[s.arrayp] = s.array[s.arrayp] + 1
 end
 
-function decrement_a_at_i (s)
+function decrement_at_point (s)
    s.array[s.arrayp] = s.array[s.arrayp] - 1
 end
 
@@ -103,8 +103,8 @@ end
 
 builtin_dictionary = {
    ["#"] = { func = dump_array_state   },
-   ["+"] = { func = increment_a_at_i   },
-   ["-"] = { func = decrement_a_at_i   },
+   ["+"] = { func = increment_at_point },
+   ["-"] = { func = decrement_at_point },
    ["["] = { func = loop_left_bracket  },
    ["]"] = { func = loop_right_bracket },
    ["<"] = { func = pointer_move_left  },
