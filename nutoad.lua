@@ -1,5 +1,8 @@
+-- we pass around a table with these variables beacuse tables are passed by
+-- reference in lua.
 state = {
    array = {},
+   targets = {},
    codep = 1,
    arrayp = 1,
 }
@@ -17,11 +20,6 @@ function decrement_a_at_i (s)
    s.array[s.arrayp] = s.array[s.arrayp] - 1
 end
 
---string.char
-function barf_from_a_at_i (s)
-
-end
-
 function pointer_move_left (s)
    s.arrayp = s.arrayp - 1
 end
@@ -30,8 +28,29 @@ function pointer_move_right (s)
    s.arrayp = s.arrayp + 1
 end
 
+function loop_left_bracket (s)
+   -- if the current address is zero, jump to the target
+   -- stored at targets[i]
+   if s.array[s.arrayp] == 0 then
+      s.codep = s.targets[s.codep]
+   end
+end
+
+function loop_right_bracket (s)
+   -- if the current address is not zero, jump to the target
+   -- stored at targets[i]
+   if s.array[s.arrayp] ~= 0 then
+      s.codep = s.targets[s.codep]
+   end
+end
+
+--string.char
+function barf_from_a_at_i (s)
+
+end
+
 function dump_array_state (s)
-   print("::final state::")
+   print("::state::")
    local buffer = {}
    for i = 1, 10 do
       buffer[i] = s.array[i]
@@ -83,40 +102,30 @@ function match_brackets (commands)
 end
 
 builtin_dictionary = {
-   ["#"] = { func = dump_array_state },
-   ["+"] = { func = increment_a_at_i },
-   ["-"] = { func = decrement_a_at_i },
-   ["."] = { func = barf_from_a_at_i },
-   ["<"] = { func = pointer_move_left },
+   ["#"] = { func = dump_array_state   },
+   ["+"] = { func = increment_a_at_i   },
+   ["-"] = { func = decrement_a_at_i   },
+   ["["] = { func = loop_left_bracket  },
+   ["]"] = { func = loop_right_bracket },
+   ["<"] = { func = pointer_move_left  },
    [">"] = { func = pointer_move_right },
+   ["."] = { func = barf_from_a_at_i   },
 }
 
-input = "+++++>>+++++<-<----#"
+input = ""
 
-t1 = extract_commands(input)
--- commandst2 = extract_commands(input_bracetest)
--- commandst3 = extract_commands(input3)
+function interpret (input, s)
+   commands = extract_commands(input)
+   s.targets = match_brackets(commands)
 
--- match all the brackets
--- spit into an array the same length of commands
--- targetstest2 = match_brackets(commandst2)
-test1targets = match_brackets(t1)
-
--- print(unpack(commandst2))
--- print(unpack(targetstest2))
-
-while state.codep < #t1 + 1 do
-   builtin_dictionary[t1[state.codep]].func(state)
-   state.codep = state.codep + 1
+   while s.codep < #commands + 1 do
+      builtin_dictionary[commands[s.codep]].func(s)
+      s.codep = s.codep + 1
+   end
 end
 
--- builtin_dictionary[i].func("test")
 -- threading idea; just check the type of a function in the dictionary
 -- if it's a string we know for sure it's brainfuck. otherwise it's a builtin
 
--- method for matching [] could be simple
--- in cristofani's simple brainfuck interpreter, there's a 'targets' array which
--- is exactly the same length as the program array.
--- given an opening brace is at index 7 in the program and a closing brace is
--- at index 9, the targets array at index 9 will store a '7' and vice versa
--- the way it uses a stack when reading them in is cute
+-- let's go
+interpret(input, state)
