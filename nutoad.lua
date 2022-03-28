@@ -1,39 +1,40 @@
-array = {}
-input = "+++++>>+++++<-#"
-input_bracetest = "+++++[>+++++[-]<]#"
-input3 = "+++++>>-----<<-----#"
+state = {
+   array = {},
+   codep = 1,
+   arrayp = 1,
+}
 
 -- the recommended size of a brainfuck array
 for i = 1, 30000 do
-   array[i] = 0
+   state.array[i] = 0
 end
 
-function increment_a_at_i (index)
-   print("increment fired")
+function increment_a_at_i (s)
+   s.array[s.arrayp] = s.array[s.arrayp] + 1
 end
 
-function decrement_a_at_i (index)
-   print("decrement fired")
+function decrement_a_at_i (s)
+   s.array[s.arrayp] = s.array[s.arrayp] - 1
 end
 
 --string.char
-function barf_from_a_at_i (index)
+function barf_from_a_at_i (s)
 
 end
 
-function pointer_move_left (pointer)
-   print("move left fired")
+function pointer_move_left (s)
+   s.arrayp = s.arrayp - 1
 end
 
-function pointer_move_right (pointer)
-   print ("move right fired")
+function pointer_move_right (s)
+   s.arrayp = s.arrayp + 1
 end
 
-function dump_array_state ()
+function dump_array_state (s)
    print("::final state::")
    local buffer = {}
    for i = 1, 10 do
-      buffer[i] = array[i]
+      buffer[i] = s.array[i]
    end
 
    print(unpack(buffer))
@@ -90,23 +91,24 @@ builtin_dictionary = {
    [">"] = { func = pointer_move_right },
 }
 
--- test1 = extract_commands(input)
-commandst2 = extract_commands(input_bracetest)
+input = "+++++>>+++++<-<----#"
+
+t1 = extract_commands(input)
+-- commandst2 = extract_commands(input_bracetest)
 -- commandst3 = extract_commands(input3)
 
 -- match all the brackets
 -- spit into an array the same length of commands
-targetstest2 = match_brackets(commandst2)
+-- targetstest2 = match_brackets(commandst2)
+test1targets = match_brackets(t1)
 
-print(unpack(commandst2))
-print(unpack(targetstest2))
+-- print(unpack(commandst2))
+-- print(unpack(targetstest2))
 
--- the currently addressed command
--- p = 1
--- while p < #commandst2 + 1 do
---    builtin_dictionary[commandst2[p]].func()
---    p = p + 1
--- end
+while state.codep < #t1 + 1 do
+   builtin_dictionary[t1[state.codep]].func(state)
+   state.codep = state.codep + 1
+end
 
 -- builtin_dictionary[i].func("test")
 -- threading idea; just check the type of a function in the dictionary
