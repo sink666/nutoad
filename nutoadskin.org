@@ -25,3 +25,10 @@
       add whatever is at the pointer and valid to the new def
       end 'interpret'
     move the tape head along
+* lol
+-- a word in toadskin is defined by:
+--  beginning a colon definition
+--  giving the word a single character idenfitifer
+--  writing the body of a word
+--  closing the definition with a semicolon
+-- a new word can't contain a definition

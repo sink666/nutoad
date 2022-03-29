@@ -14,19 +14,13 @@ function pointer_move_right (s)
    s.arrayp = s.arrayp + 1
 end
 
--- the looping construct in brainfuck has intentional fallthrough on the closing
--- bracket when it is reached and the loop is complete
 function loop_left_bracket (s, targets)
-   -- if the current address is zero, jump to the target
-   -- stored at targets[i]
    if s.array[s.arrayp] == 0 then
       return targets[s.codep]
    end
 end
 
 function loop_right_bracket (s, targets)
-   -- if the current address is not zero, jump to the target
-   -- stored at targets[i]
    if s.array[s.arrayp] ~= 0 then
       return targets[s.codep]
    end
@@ -49,12 +43,11 @@ function read_stdin (s)
 end
 
 function dump_array_state (s)
-   print("::state::")
    local buffer = {}
    for i = 1, 10 do
       buffer[i] = s.array[i]
    end
-   print("pointer location: ", s.arrayp)
+   print(string.format("::state:: pointer loc: %d", s.arrayp))
    print(unpack(buffer))
 end
 
@@ -107,19 +100,17 @@ function match_brackets (commands)
    return targets
 end
 
--- threading idea; just check the type of a function in the dictionary
--- if it's a string we know for sure it's brainfuck. otherwise it's a builtin
-function dict_contains (s, key)
+function dict_contains (key, s)
    return s.dictionary[key] ~= nil
 end
 
--- we pass around a table with these variables beacuse tables are passed by
--- reference in lua.
+-- we pass around a table beacuse tables are passed by reference in lua.
 state = {
    array = {},
-   targets = {},
    codep = 1,
    arrayp = 1,
+   interpret = true,
+   newdefkey = "",
    dictionary = {
       ["#"] = { func = dump_array_state  , immediate = false },
       ["+"] = { func = increment_at_point, immediate = false },
@@ -132,9 +123,8 @@ state = {
       [","] = { func = read_stdin        , immediate = false },
       [":"] = { func = begin_new_word    , immediate = false },
       [";"] = { func = end_new_word      , immediate = true  },
+      ["@"] = { func = dump_words        , immediate = false },
    },
-   interpret = true,
-   newdefkey = "",
 }
 
 -- the recommended size of a brainfuck array
@@ -142,18 +132,14 @@ for i = 1, 30000 do
    state.array[i] = 0
 end
 
--- a word in toadskin is defined by:
---  beginning a colon definition
---  giving the word a single character idenfitifer
---  writing the body of a word
---  closing the definition with a semicolon
--- a new word can't contain a definition
 -- input = "this should be ignored +++++#:A[-]>;A#+++++# and this too"
 -- input = "+++++#:A[-]>;A#+++++A#+++++[-]#"
+-- input = ":A[-]>;+++++#A#+++++#A#+++++#A#"
 -- input = "+++++#:A[-]>;A#+++++#[-]#"
--- input = ":A[-]>; +++++#A#+++++#[-]#"
+-- input = "++++++#:A[-];A#"
+input = "+++++#:A[-]:B-;;A#"
 
-function quit(input, state)
+function quit (input, state)
    local commands = extract_commands(input)
    local targets = match_brackets(commands)
 
@@ -161,43 +147,53 @@ function quit(input, state)
    print("bye")
 end
 
+function add (current, s)
+   if current == ":" then
+      local errstr = string.format("in definition %s: \n  nested procedure definitions are invalid.", s.newdefkey)
+      error(errstr)
+   end
+   
+   if dict_contains(current, s) then
+      if s.dictionary[current].immediate then
+         s.dictionary[current].func(s)
+      else
+         local temp = s.dictionary[s.newdefkey].func
+         temp = temp .. current
+         s.dictionary[s.newdefkey].func = temp
+      end
+   else
+      s.newdefkey = current
+      s.dictionary[s.newdefkey] = { func = "", immediate = false }
+   end
+end
+
+function execute (current, targets, s)
+   local func = s.dictionary[current].func
+   if type(func) == "function" then
+      return func(s, targets)
+   else
+      local tempc = extract_commands(func)
+      local tempt = match_brackets(tempc)
+      interpret(tempc, tempt, s)
+   end
+end
+
 function interpret (input, targets, s)
    local codep = 1
-   -- local commands = extract_commands(input)
-   -- local targets = targets
-   print(unpack(input))
 
    while codep < #input + 1 do
       local current = input[codep]
-      -- are we interpreting?
       if s.interpret then
-         if dict_contains(s, current) then
-            if type(s.dictionary[current].func) == "function" then
-               local temp = s.dictionary[current].func(s, targets)
-               if temp then
-                  codep = temp
-               end
-            else
-               local tempc = extract_commands(s.dictionary[current].func)
-               local tempt = match_brackets(s.dictionary[current].func)
-               interpret(tempc, tempt, s)
+         if dict_contains(current, s) then
+            local temp = execute(current, targets, s)
+            if temp then
+               codep = temp
             end
          else
-            --ignore it
+            -- skip whatever we just hit is if its not in the dictionary
          end
-      else
-         if dict_contains(s, current) then
-            if s.dictionary[current].immediate then
-               s.dictionary[current].func(s)
-            else
-               local temp = s.dictionary[s.newdefkey].func
-               temp = temp .. current
-               s.dictionary[s.newdefkey].func = temp
-            end
-         else
-            s.newdefkey = current
-            s.dictionary[s.newdefkey] = { func = "", immediate = false }
-         end
+      else -- we must be adding a new definition
+         add(current, s)
       end
          
       codep = codep + 1
@@ -205,11 +201,5 @@ function interpret (input, targets, s)
    end
 end
 
--- function add()
-
--- end
-
 -- let's go
--- interpret(input, state)
-
 quit(input, state)
