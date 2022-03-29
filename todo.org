@@ -16,7 +16,8 @@
    CLOSED: [2022-03-29 Tue 16:11]
 ** DONE read user input
    CLOSED: [2022-03-29 Tue 16:12]
-** TODO underflow and overflow
+** DONE underflow and overflow
+   CLOSED: [2022-03-29 Tue 23:27]
 ** TODO wraparound?
 ** DONE colon definitions
    CLOSED: [2022-03-29 Tue 18:21]

@@ -1,9 +1,19 @@
+function checkvalue(v)
+   if v == 256 then
+      return 0
+   elseif v == -1 then
+      return 255
+   else
+      return v
+   end
+end
+
 function increment_at_point (s)
-   s.array[s.arrayp] = s.array[s.arrayp] + 1
+   s.array[s.arrayp] = checkvalue(s.array[s.arrayp] + 1)
 end
 
 function decrement_at_point (s)
-   s.array[s.arrayp] = s.array[s.arrayp] - 1
+   s.array[s.arrayp] = checkvalue(s.array[s.arrayp] - 1)
 end
 
 function pointer_move_left (s)
@@ -137,7 +147,8 @@ end
 -- input = ":A[-]>;+++++#A#+++++#A#+++++#A#"
 -- input = "+++++#:A[-]>;A#+++++#[-]#"
 -- input = "++++++#:A[-];A#"
-input = "+++++#:A[-]:B-;;A#"
+-- input = "+++++#:A[-]:B-;;A#"
+input = "#-#"
 
 function quit (input, state)
    local commands = extract_commands(input)
