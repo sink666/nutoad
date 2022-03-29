@@ -28,6 +28,8 @@ function pointer_move_right (s)
    s.arrayp = s.arrayp + 1
 end
 
+-- the looping construct in brainfuck has intentional fallthrough on the closing
+-- bracket when it is reached and the loop is complete
 function loop_left_bracket (s)
    -- if the current address is zero, jump to the target
    -- stored at targets[i]
@@ -45,8 +47,20 @@ function loop_right_bracket (s)
 end
 
 --string.char
-function barf_from_a_at_i (s)
+function barf_from_array (s)
+   io.write(string.char(s.array[s.arrayp]))
+end
 
+function read_stdin (s)
+   --read a character from input
+   local temp = io.stdin:read(1)
+   if temp == nil then
+      --if it's nil (eof) we return
+      return
+   else
+      temp = string.byte(temp)
+   end
+   s.array[s.arrayp] = temp
 end
 
 function dump_array_state (s)
@@ -55,7 +69,7 @@ function dump_array_state (s)
    for i = 1, 10 do
       buffer[i] = s.array[i]
    end
-
+   print("pointer location: ", s.arrayp)
    print(unpack(buffer))
 end
 
@@ -101,6 +115,8 @@ function match_brackets (commands)
    return targets
 end
 
+-- threading idea; just check the type of a function in the dictionary
+-- if it's a string we know for sure it's brainfuck. otherwise it's a builtin
 builtin_dictionary = {
    ["#"] = { func = dump_array_state   },
    ["+"] = { func = increment_at_point },
@@ -109,23 +125,28 @@ builtin_dictionary = {
    ["]"] = { func = loop_right_bracket },
    ["<"] = { func = pointer_move_left  },
    [">"] = { func = pointer_move_right },
-   ["."] = { func = barf_from_a_at_i   },
+   ["."] = { func = barf_from_array    },
+   [","] = { func = read_stdin         },
 }
 
-input = ""
+function dict_contains (key)
+   return builtin_dictionary[key] ~= nil
+end
+
+input = "[]++++++++++[>>+>+>++++++[<<+<+++>>>-]<<<<-]\"A*$\";?@![#>>+<<]>[>>]<<<<[>++<[-]]>.>."
 
 function interpret (input, s)
    commands = extract_commands(input)
    s.targets = match_brackets(commands)
 
    while s.codep < #commands + 1 do
-      builtin_dictionary[commands[s.codep]].func(s)
+      local current = commands[s.codep]
+      if dict_contains(current) then
+         builtin_dictionary[current].func(s)
+      end
       s.codep = s.codep + 1
    end
 end
-
--- threading idea; just check the type of a function in the dictionary
--- if it's a string we know for sure it's brainfuck. otherwise it's a builtin
 
 -- let's go
 interpret(input, state)

@@ -8,9 +8,12 @@
    CLOSED: [2022-03-24 Thu 22:45]
 ** DONE basic input
    CLOSED: [2022-03-24 Thu 22:45]
-** TODO brace finding and matching
-** TODO actually change the state of the array
+** DONE brace finding and matching
+   CLOSED: [2022-03-29 Tue 00:08]
+** DONE actually change the state of the array
+   CLOSED: [2022-03-29 Tue 00:08]
 ** TODO read from the array
+** TODO read user input
 ** TODO underflow and overflow
 ** TODO wraparound?
 ** TODO colon definitions
