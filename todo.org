@@ -18,6 +18,7 @@
    CLOSED: [2022-03-29 Tue 16:12]
 ** TODO underflow and overflow
 ** TODO wraparound?
-** TODO colon definitions
+** DONE colon definitions
+   CLOSED: [2022-03-29 Tue 18:21]
 ** DONE figure out a distinction between builtins and user-defined commands
    CLOSED: [2022-03-27 Sun 02:01]
