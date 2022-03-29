@@ -1,17 +1,3 @@
--- we pass around a table with these variables beacuse tables are passed by
--- reference in lua.
-state = {
-   array = {},
-   targets = {},
-   codep = 1,
-   arrayp = 1,
-}
-
--- the recommended size of a brainfuck array
-for i = 1, 30000 do
-   state.array[i] = 0
-end
-
 function increment_at_point (s)
    s.array[s.arrayp] = s.array[s.arrayp] + 1
 end
@@ -34,7 +20,7 @@ function loop_left_bracket (s)
    -- if the current address is zero, jump to the target
    -- stored at targets[i]
    if s.array[s.arrayp] == 0 then
-      s.codep = s.targets[s.codep]
+      return s.targets[s.codep]
    end
 end
 
@@ -42,11 +28,10 @@ function loop_right_bracket (s)
    -- if the current address is not zero, jump to the target
    -- stored at targets[i]
    if s.array[s.arrayp] ~= 0 then
-      s.codep = s.targets[s.codep]
+      return s.targets[s.codep]
    end
 end
 
---string.char
 function barf_from_array (s)
    io.write(string.char(s.array[s.arrayp]))
 end
@@ -56,7 +41,7 @@ function read_stdin (s)
    local temp = io.stdin:read(1)
    if temp == nil then
       --if it's nil (eof) we return
-      return
+      return nil
    else
       temp = string.byte(temp)
    end
@@ -73,7 +58,14 @@ function dump_array_state (s)
    print(unpack(buffer))
 end
 
--- extract the commands
+function begin_new_word (s)
+   s.interpret = false
+end
+
+function end_new_word (s)
+   s.interpret = true
+end
+
 -- in lua you can't just index into a string like in C
 -- so we return a substring at the position (i, i) in the string
 function extract_commands (input)
@@ -117,34 +109,87 @@ end
 
 -- threading idea; just check the type of a function in the dictionary
 -- if it's a string we know for sure it's brainfuck. otherwise it's a builtin
-builtin_dictionary = {
-   ["#"] = { func = dump_array_state   },
-   ["+"] = { func = increment_at_point },
-   ["-"] = { func = decrement_at_point },
-   ["["] = { func = loop_left_bracket  },
-   ["]"] = { func = loop_right_bracket },
-   ["<"] = { func = pointer_move_left  },
-   [">"] = { func = pointer_move_right },
-   ["."] = { func = barf_from_array    },
-   [","] = { func = read_stdin         },
-}
-
-function dict_contains (key)
-   return builtin_dictionary[key] ~= nil
+function dict_contains (s, key)
+   return s.dictionary[key] ~= nil
 end
 
-input = "[]++++++++++[>>+>+>++++++[<<+<+++>>>-]<<<<-]\"A*$\";?@![#>>+<<]>[>>]<<<<[>++<[-]]>.>."
+-- we pass around a table with these variables beacuse tables are passed by
+-- reference in lua.
+state = {
+   array = {},
+   targets = {},
+   codep = 1,
+   arrayp = 1,
+   dictionary = {
+      ["#"] = { func = dump_array_state  , immediate = false },
+      ["+"] = { func = increment_at_point, immediate = false },
+      ["-"] = { func = decrement_at_point, immediate = false },
+      ["["] = { func = loop_left_bracket , immediate = false },
+      ["]"] = { func = loop_right_bracket, immediate = false },
+      ["<"] = { func = pointer_move_left , immediate = false },
+      [">"] = { func = pointer_move_right, immediate = false },
+      ["."] = { func = barf_from_array   , immediate = false },
+      [","] = { func = read_stdin        , immediate = false },
+      [":"] = { func = begin_new_word    , immediate = false },
+      [";"] = { func = end_new_word      , immediate = true  },
+   },
+   interpret = true,
+   newdefkey = "",
+   bookmark = 1
+}
+
+-- the recommended size of a brainfuck array
+for i = 1, 30000 do
+   state.array[i] = 0
+end
+
+-- a word in toadskin is defined by:
+--  beginning a colon definition
+--  giving the word a single character idenfitifer
+--  writing the body of a word
+--  closing the definition with a semicolon
+-- a new word can't contain a definition
+input = "this should be ignored +++++#:A[-]>;A#+++++# and this too"
 
 function interpret (input, s)
-   commands = extract_commands(input)
+   local codep = 1
+   local commands = extract_commands(input)
    s.targets = match_brackets(commands)
+   print(unpack(commands))
 
-   while s.codep < #commands + 1 do
-      local current = commands[s.codep]
-      if dict_contains(current) then
-         builtin_dictionary[current].func(s)
+   while codep < #commands + 1 do
+      local current = commands[codep]
+      -- are we interpreting?
+      if s.interpret then
+         if dict_contains(s, current) then
+            if type(s.dictionary[current].func) == "function" then
+               local temp = s.dictionary[current].func(s)
+               if temp then
+                  codep = temp
+               end
+            else
+               interpret(s.dictionary[current].func, s)
+            end
+         else
+            --ignore it
+         end
+      else
+         if dict_contains(s, current) then
+            if s.dictionary[current].immediate then
+               s.dictionary[current].func(s)
+            else
+               local temp = s.dictionary[s.newdefkey].func
+               temp = temp .. current
+               s.dictionary[s.newdefkey].func = temp
+            end
+         else
+            s.newdefkey = current
+            s.dictionary[s.newdefkey] = { func = "", immediate = false }
+         end
       end
-      s.codep = s.codep + 1
+         
+      codep = codep + 1
+      s.codep = codep
    end
 end
 
