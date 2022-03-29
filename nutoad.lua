@@ -16,19 +16,19 @@ end
 
 -- the looping construct in brainfuck has intentional fallthrough on the closing
 -- bracket when it is reached and the loop is complete
-function loop_left_bracket (s)
+function loop_left_bracket (s, targets)
    -- if the current address is zero, jump to the target
    -- stored at targets[i]
    if s.array[s.arrayp] == 0 then
-      return s.targets[s.codep]
+      return targets[s.codep]
    end
 end
 
-function loop_right_bracket (s)
+function loop_right_bracket (s, targets)
    -- if the current address is not zero, jump to the target
    -- stored at targets[i]
    if s.array[s.arrayp] ~= 0 then
-      return s.targets[s.codep]
+      return targets[s.codep]
    end
 end
 
@@ -135,7 +135,6 @@ state = {
    },
    interpret = true,
    newdefkey = "",
-   bookmark = 1
 }
 
 -- the recommended size of a brainfuck array
@@ -149,26 +148,39 @@ end
 --  writing the body of a word
 --  closing the definition with a semicolon
 -- a new word can't contain a definition
-input = "this should be ignored +++++#:A[-]>;A#+++++# and this too"
+-- input = "this should be ignored +++++#:A[-]>;A#+++++# and this too"
+-- input = "+++++#:A[-]>;A#+++++A#+++++[-]#"
+-- input = "+++++#:A[-]>;A#+++++#[-]#"
+-- input = ":A[-]>; +++++#A#+++++#[-]#"
 
-function interpret (input, s)
-   local codep = 1
+function quit(input, state)
    local commands = extract_commands(input)
-   s.targets = match_brackets(commands)
-   print(unpack(commands))
+   local targets = match_brackets(commands)
 
-   while codep < #commands + 1 do
-      local current = commands[codep]
+   interpret(commands, targets, state)
+   print("bye")
+end
+
+function interpret (input, targets, s)
+   local codep = 1
+   -- local commands = extract_commands(input)
+   -- local targets = targets
+   print(unpack(input))
+
+   while codep < #input + 1 do
+      local current = input[codep]
       -- are we interpreting?
       if s.interpret then
          if dict_contains(s, current) then
             if type(s.dictionary[current].func) == "function" then
-               local temp = s.dictionary[current].func(s)
+               local temp = s.dictionary[current].func(s, targets)
                if temp then
                   codep = temp
                end
             else
-               interpret(s.dictionary[current].func, s)
+               local tempc = extract_commands(s.dictionary[current].func)
+               local tempt = match_brackets(s.dictionary[current].func)
+               interpret(tempc, tempt, s)
             end
          else
             --ignore it
@@ -193,5 +205,11 @@ function interpret (input, s)
    end
 end
 
+-- function add()
+
+-- end
+
 -- let's go
-interpret(input, state)
+-- interpret(input, state)
+
+quit(input, state)
