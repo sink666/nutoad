@@ -61,8 +61,21 @@ function dump_array_state (s)
    print(unpack(buffer))
 end
 
+function dump_words (s)
+   print("words:")
+   -- local n
+   local words = {}
+   for k,_ in pairs(s.dictionary) do
+      -- n = n + 1
+      words[#words + 1] = k
+   end
+   print(unpack(words))
+
+end
+
 function begin_new_word (s)
    s.interpret = false
+   s.defident = true
 end
 
 function end_new_word (s)
@@ -121,6 +134,7 @@ state = {
    arrayp = 1,
    interpret = true,
    newdefkey = "",
+   defident = false,
    dictionary = {
       ["#"] = { func = dump_array_state  , immediate = false },
       ["+"] = { func = increment_at_point, immediate = false },
@@ -146,9 +160,9 @@ end
 -- input = "+++++#:A[-]>;A#+++++A#+++++[-]#"
 -- input = ":A[-]>;+++++#A#+++++#A#+++++#A#"
 -- input = "+++++#:A[-]>;A#+++++#[-]#"
--- input = "++++++#:A[-];A#"
+-- input = "++++++#:A[->+<];A#"
 -- input = "+++++#:A[-]:B-;;A#"
-input = "#-#"
+-- input = "#-#"
 
 function quit (input, state)
    local commands = extract_commands(input)
@@ -167,15 +181,18 @@ function add (current, s)
    if dict_contains(current, s) then
       if s.dictionary[current].immediate then
          s.dictionary[current].func(s)
-      else
-         local temp = s.dictionary[s.newdefkey].func
-         temp = temp .. current
-         s.dictionary[s.newdefkey].func = temp
       end
    else
-      s.newdefkey = current
-      s.dictionary[s.newdefkey] = { func = "", immediate = false }
+      if s.defident then
+         s.newdefkey = current
+         s.dictionary[s.newdefkey] = { func = "", immediate = false }
+         s.defident = false
+         return
+      end
    end
+
+   local temp = s.dictionary[s.newdefkey].func .. current
+   s.dictionary[s.newdefkey].func = temp
 end
 
 function execute (current, targets, s)
