@@ -82,6 +82,47 @@ function end_new_word (s)
    s.interpret = true
 end
 
+-- we pass around a table beacuse tables are passed by reference in lua.
+state = {
+   array = {},
+   codep = 1,
+   arrayp = 1,
+   interpret = true,
+   newdefkey = "",
+   defident = false,
+   dictionary = {
+      ["#"] = { func = dump_array_state  , immediate = false },
+      ["+"] = { func = increment_at_point, immediate = false },
+      ["-"] = { func = decrement_at_point, immediate = false },
+      ["["] = { func = loop_left_bracket , immediate = false },
+      ["]"] = { func = loop_right_bracket, immediate = false },
+      ["<"] = { func = pointer_move_left , immediate = false },
+      [">"] = { func = pointer_move_right, immediate = false },
+      ["."] = { func = barf_from_array   , immediate = false },
+      [","] = { func = read_stdin        , immediate = false },
+      [":"] = { func = begin_new_word    , immediate = false },
+      [";"] = { func = end_new_word      , immediate = true  },
+      ["@"] = { func = dump_words        , immediate = false },
+   },
+}
+
+-- the recommended size of a brainfuck array
+for i = 1, 30000 do
+   state.array[i] = 0
+end
+
+-- input = "this should be ignored +++++#:A[-]>;A#+++++# and this too"
+-- input = "+++++#:A[-]>;A#+++++A#+++++[-]#"
+-- input = ":A[-]>;+++++#A#+++++#A#+++++#A#"
+-- input = "+++++#:A[-]>;A#+++++#[-]#"
+-- input = "++++++#:A[->+<];A#"
+-- input = "+++++#:A[-]:B-;;A#"
+-- input = "#-#"
+
+function dict_contains (key, s)
+   return s.dictionary[key] ~= nil
+end
+
 -- in lua you can't just index into a string like in C
 -- so we return a substring at the position (i, i) in the string
 function extract_commands (input)
@@ -122,47 +163,6 @@ function match_brackets (commands)
 
    return targets
 end
-
-function dict_contains (key, s)
-   return s.dictionary[key] ~= nil
-end
-
--- we pass around a table beacuse tables are passed by reference in lua.
-state = {
-   array = {},
-   codep = 1,
-   arrayp = 1,
-   interpret = true,
-   newdefkey = "",
-   defident = false,
-   dictionary = {
-      ["#"] = { func = dump_array_state  , immediate = false },
-      ["+"] = { func = increment_at_point, immediate = false },
-      ["-"] = { func = decrement_at_point, immediate = false },
-      ["["] = { func = loop_left_bracket , immediate = false },
-      ["]"] = { func = loop_right_bracket, immediate = false },
-      ["<"] = { func = pointer_move_left , immediate = false },
-      [">"] = { func = pointer_move_right, immediate = false },
-      ["."] = { func = barf_from_array   , immediate = false },
-      [","] = { func = read_stdin        , immediate = false },
-      [":"] = { func = begin_new_word    , immediate = false },
-      [";"] = { func = end_new_word      , immediate = true  },
-      ["@"] = { func = dump_words        , immediate = false },
-   },
-}
-
--- the recommended size of a brainfuck array
-for i = 1, 30000 do
-   state.array[i] = 0
-end
-
--- input = "this should be ignored +++++#:A[-]>;A#+++++# and this too"
--- input = "+++++#:A[-]>;A#+++++A#+++++[-]#"
--- input = ":A[-]>;+++++#A#+++++#A#+++++#A#"
--- input = "+++++#:A[-]>;A#+++++#[-]#"
--- input = "++++++#:A[->+<];A#"
--- input = "+++++#:A[-]:B-;;A#"
--- input = "#-#"
 
 function quit (input, state)
    local commands = extract_commands(input)
