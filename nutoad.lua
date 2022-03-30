@@ -111,13 +111,7 @@ for i = 1, 30000 do
    state.array[i] = 0
 end
 
--- input = "this should be ignored +++++#:A[-]>;A#+++++# and this too"
--- input = "+++++#:A[-]>;A#+++++A#+++++[-]#"
--- input = ":A[-]>;+++++#A#+++++#A#+++++#A#"
--- input = "+++++#:A[-]>;A#+++++#[-]#"
--- input = "++++++#:A[->+<];A#"
--- input = "+++++#:A[-]:B-;;A#"
--- input = "#-#"
+input = ":ab+++; a#[-] :b+++; a#"
 
 function dict_contains (key, s)
    return s.dictionary[key] ~= nil
