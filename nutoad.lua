@@ -106,13 +106,6 @@ state = {
    },
 }
 
--- the recommended size of a brainfuck array
-for i = 1, 30000 do
-   state.array[i] = 0
-end
-
-input = ":ab+++; a#[-] :b+++; a#"
-
 function dict_contains (key, s)
    return s.dictionary[key] ~= nil
 end
@@ -158,13 +151,7 @@ function match_brackets (commands)
    return targets
 end
 
-function quit (input, state)
-   local commands = extract_commands(input)
-   local targets = match_brackets(commands)
 
-   interpret(commands, targets, state)
-   print("bye")
-end
 
 function add (current, s)
    if current == ":" then
@@ -222,6 +209,22 @@ function interpret (input, targets, s)
       s.codep = codep
    end
 end
+
+function quit (input, state)
+   local commands = extract_commands(input)
+   local targets = match_brackets(commands)
+
+   interpret(commands, targets, state)
+   print("bye")
+end
+
+-- the recommended size of a brainfuck array
+for i = 1, 30000 do
+   state.array[i] = 0
+end
+
+-- our input
+input = ":ab+++; a#[-] :b+++; a#"
 
 -- let's go
 quit(input, state)
