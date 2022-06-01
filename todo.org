@@ -3,7 +3,6 @@
    CLOSED: [2022-03-22 Tue 14:32]
 ** DONE dictionary
    CLOSED: [2022-03-22 Tue 14:32]
-** TODO file input
 ** DONE main loop to eat up the input tape -- ish
    CLOSED: [2022-03-24 Thu 22:45]
 ** DONE basic input
@@ -18,8 +17,19 @@
    CLOSED: [2022-03-29 Tue 16:12]
 ** DONE underflow and overflow
    CLOSED: [2022-03-29 Tue 23:27]
-** TODO wraparound?
 ** DONE colon definitions
    CLOSED: [2022-03-29 Tue 18:21]
 ** DONE figure out a distinction between builtins and user-defined commands
    CLOSED: [2022-03-27 Sun 02:01]
+* v2
+** TODO create a scanner
+*** TODO figure out what the current scanner is and then make it distinct
+*** TODO scanner spits out tokens with the operation type and position
+** TODO create a parser
+*** TODO parses the tokens, spits out an IR to execute
+** TODO create an IR
+*** TODO need to convert tokens and data into some sort of intermediate
+nutoad only has keywords, subroutine definitions, subroutine calls and comments
+*** TODO need to execute that
+** TODO file input
+** TODO wraparound?

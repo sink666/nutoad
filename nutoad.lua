@@ -106,115 +106,72 @@ state = {
    },
 }
 
-function dict_contains (key, s)
-   return s.dictionary[key] ~= nil
+function set_contains (set, key)
+   return set[key] ~= nil
 end
 
--- in lua you can't just index into a string like in C
--- so we return a substring at the position (i, i) in the string
-function extract_commands (input)
-   local extract = {}
+function scan (input)
+   local in_sdef = false
+   local next_is_id = false
+   local open_sdef = false
 
+   local extract = {}
+   local tokens = {}
+   local words = {
+      ["+"] = "inc",
+      ["-"] = "dec",
+      ["["] = "loopl",
+      ["]"] = "loopr",
+      ["<"] = "movel",
+      [">"] = "mover",
+      ["."] = "barf",
+      [","] = "read",
+      ["#"] = "dumpm",
+      ["@"] = "dumpw",
+   }
+
+   -- get each character and shove it into a table
    for i = 1, #input do
       extract[i] = input:sub(i, i)
    end
 
-   return extract
-end
-
-function match_brackets (commands)
-   local stack = {}
-   local stackp = 1
-   local targets = {}
-
-   for i=1, #commands do
-      targets[i] = 0
-      if commands[i] == "[" then
-         stack[stackp] = i
-         stackp = stackp + 1
+   for i = 1, #extract do
+      if extract[i] == ":" then
+         in_sdef = true
+         open_sdef = true
       end
-      if commands[i] == "]" then
-         if stackp == 0 then
-            error("Unmatched ']'")
+
+      if set_contains(words, extract[i]) and not in_sdef then
+         tokens[i] = words[extract[i]]
+      elseif in_sdef then
+         if extract[i] ~= ";" and not next_is_id then
+            tokens[i] = "sdef"
+         elseif next_is_id then
+            words[extract[i]] = "scall"
+            tokens[i] = "sid"
+            next_is_id = false
          else
-            stackp = stackp - 1
-            targets[i] = stack[stackp]
-            targets[stack[stackp]] = i
+            tokens[i] = "sdef"
+            in_sdef = false
          end
+      else
+         tokens[i] = "com"
+      end
+      
+      if open_sdef then
+         next_is_id = true
+         open_sdef = false
       end
    end
 
-   if stackp > 1 then
-      error("unmatched '['")
-   end
-
-   return targets
-end
-
-
-
-function add (current, s)
-   if current == ":" then
-      local errstr = string.format("in definition %s: \n  nested procedure definitions are invalid.", s.newdefkey)
-      error(errstr)
-   end
+   return tokens
    
-   if dict_contains(current, s) then
-      if s.dictionary[current].immediate then
-         s.dictionary[current].func(s)
-      end
-   else
-      if s.defident then
-         s.newdefkey = current
-         s.dictionary[s.newdefkey] = { func = "", immediate = false }
-         s.defident = false
-         return
-      end
-   end
-
-   local temp = s.dictionary[s.newdefkey].func .. current
-   s.dictionary[s.newdefkey].func = temp
-end
-
-function execute (current, targets, s)
-   local func = s.dictionary[current].func
-   if type(func) == "function" then
-      return func(s, targets)
-   else
-      local tempc = extract_commands(func)
-      local tempt = match_brackets(tempc)
-      interpret(tempc, tempt, s)
-   end
-end
-
-function interpret (input, targets, s)
-   local codep = 1
-
-   while codep < #input + 1 do
-      local current = input[codep]
-      if s.interpret then
-         if dict_contains(current, s) then
-            local temp = execute(current, targets, s)
-            if temp then
-               codep = temp
-            end
-         else
-            -- skip whatever we just hit is if its not in the dictionary
-         end
-      else -- we must be adding a new definition
-         add(current, s)
-      end
-         
-      codep = codep + 1
-      s.codep = codep
-   end
 end
 
 function quit (input, state)
-   local commands = extract_commands(input)
-   local targets = match_brackets(commands)
-
-   interpret(commands, targets, state)
+   local tokens = scan(input)
+   print(unpack(tokens))
+   -- interpret(commands, targets, state)
    print("bye")
 end
 
@@ -224,7 +181,8 @@ for i = 1, 30000 do
 end
 
 -- our input
-input = ":ab+++; a#[-] :b+++; a#"
+-- input = "@:ab+++;@ a#[-] :b+++;@ a#@"
+input = "apple +- :a+++; +-a++"
 
 -- let's go
 quit(input, state)
