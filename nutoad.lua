@@ -118,16 +118,9 @@ function scan (input)
    local extract = {}
    local tokens = {}
    local words = {
-      ["+"] = "inc",
-      ["-"] = "dec",
-      ["["] = "loopl",
-      ["]"] = "loopr",
-      ["<"] = "movel",
-      [">"] = "mover",
-      ["."] = "barf",
-      [","] = "read",
-      ["#"] = "dumpm",
-      ["@"] = "dumpw",
+      ["+"] = "inc",   ["-"] = "dec",   ["["] = "loopl", ["]"] = "loopr",
+      ["<"] = "movel", [">"] = "mover", ["."] = "barf",  [","] = "read",
+      ["#"] = "dumpm", ["@"] = "dumpw",
    }
 
    -- get each character and shove it into a table
@@ -145,34 +138,44 @@ function scan (input)
          tokens[i] = words[extract[i]]
       elseif in_sdef then
          if extract[i] ~= ";" and not next_is_id then
-            tokens[i] = "sdef"
+            if open_sdef then
+               next_is_id = true
+               open_sdef = false
+               tokens[i] = "sopn"
+            else
+               tokens[i] = "sdef"
+            end
          elseif next_is_id then
-            words[extract[i]] = "scall"
-            tokens[i] = "sid"
+            words[extract[i]] = { t = "scall", name = extract[i] }
+            tokens[i] = { t = "sid", name = extract[i] }
             next_is_id = false
          else
-            tokens[i] = "sdef"
+            tokens[i] = "scls"
             in_sdef = false
          end
       else
          tokens[i] = "com"
       end
-      
-      if open_sdef then
-         next_is_id = true
-         open_sdef = false
-      end
    end
 
+   tokens[#extract + 1] = "eof"
+
    return tokens
-   
 end
 
 function quit (input, state)
    local tokens = scan(input)
-   print(unpack(tokens))
+
+   for i = 1, #tokens do
+      if type(tokens[i]) == "table" then
+         print(tokens[i].t)
+         print(tokens[i].name)
+      else
+         print(tokens[i])
+      end
+   end
    -- interpret(commands, targets, state)
-   print("bye")
+   -- print("bye")
 end
 
 -- the recommended size of a brainfuck array
