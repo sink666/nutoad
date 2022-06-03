@@ -22,14 +22,20 @@
 ** DONE figure out a distinction between builtins and user-defined commands
    CLOSED: [2022-03-27 Sun 02:01]
 * v2
-** TODO create a scanner
-*** TODO figure out what the current scanner is and then make it distinct
-*** TODO scanner spits out tokens with the operation type and position
+** DONE create a scanner
+CLOSED: [2022-06-02 Thu 23:33]
+*** DONE figure out what the current scanner is and then make it distinct
+CLOSED: [2022-06-02 Thu 23:33]
+*** DONE scanner spits out tokens with the operation type and position
+CLOSED: [2022-06-02 Thu 23:33]
 ** TODO create a parser
 *** TODO parses the tokens, spits out an IR to execute
 ** TODO create an IR
-*** TODO need to convert tokens and data into some sort of intermediate
+*** need to convert tokens and data into some sort of intermediate
 nutoad only has keywords, subroutine definitions, subroutine calls and comments
+*** TODO brace semantics
+*** TODO definition semantics
+*** TODO the IR could be tuples?
 *** TODO need to execute that
 ** TODO file input
 ** TODO wraparound?

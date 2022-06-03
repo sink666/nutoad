@@ -163,16 +163,73 @@ function scan (input)
    return tokens
 end
 
+function parse (tokens)
+   local tuples = {}
+   local targets = {}
+
+   --lets get the jump targets
+   local stackp = 1
+   local stack = {}
+
+   for i = 1, #tokens do
+      targets[i] = 0
+      if tokens[i] == "loopl" then
+         stack[stackp] = i
+         stackp = stackp + 1
+      end
+      if tokens[i] == "loopr" then
+         if stackp == 0 then 
+            error("unmatched ']'")
+         else
+            stackp = stackp - 1
+            targets[i] = stack[stackp]
+            targets[stack[stackp]] = i
+         end
+      end
+   end
+
+   if stackp > 1 then
+      error("unmatched '['")
+   end
+
+   --build the ir as tuples of operations and address values
+   for i = 1, #tokens do
+      local n = i + 1
+      if tokens[i] == "inc" then
+         tuples[i] = { op = "inc", naddr = n }
+      elseif tokens[i] == "dec" then
+         tuples[i] = { op = "dec", naddr = n }
+      elseif tokens[i] == "loopl" then
+         tuples[i] = { op = "loopl", jaddr = targets[i], naddr = n }
+      elseif tokens[i] == "loopr" then
+         tuples[i] = { op = "loopr", jaddr = targets[i], naddr = n }
+      elseif tokens[i] == "eof" then
+         tuples[i] = { op = "eof", naddr = nil }
+      else
+         tuples[i] = { op = "nop", naddr = n }
+      end
+   end
+
+   return tuples
+end
+
 function quit (input, state)
    local tokens = scan(input)
+   local ir = parse(tokens)
 
    for i = 1, #tokens do
       if type(tokens[i]) == "table" then
-         print(tokens[i].t)
-         print(tokens[i].name)
+         local t = string.format("%s %s", tokens[i].t, tokens[i].name)
+         print(t)
       else
          print(tokens[i])
       end
+   end
+
+   for i = 1, #ir do
+      local t = string.format("%2d: %5s %5s %5s",
+                              i, ir[i].op, ir[i].naddr, ir[i].jaddr)
+      print(t)
    end
    -- interpret(commands, targets, state)
    -- print("bye")
@@ -185,7 +242,8 @@ end
 
 -- our input
 -- input = "@:ab+++;@ a#[-] :b+++;@ a#@"
-input = "apple +- :a+++; +-a++"
+-- input = "apple +- :a+++; +-a++"
+input = "apple [+-] apple++++"
 
 -- let's go
 quit(input, state)
