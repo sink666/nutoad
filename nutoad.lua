@@ -212,8 +212,9 @@ function quit (input)
 end
 
 -- the recommended size of a brainfuck array
+array = {}
 for i = 1, 30000 do
-   state.array[i] = 0
+   array[i] = 0
 end
 
 -- our input
