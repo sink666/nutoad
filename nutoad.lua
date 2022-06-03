@@ -82,30 +82,6 @@ function end_new_word (s)
    s.interpret = true
 end
 
--- we pass around a table beacuse tables are passed by reference in lua.
-state = {
-   array = {},
-   codep = 1,
-   arrayp = 1,
-   interpret = true,
-   newdefkey = "",
-   defident = false,
-   dictionary = {
-      ["#"] = { func = dump_array_state  , immediate = false },
-      ["+"] = { func = increment_at_point, immediate = false },
-      ["-"] = { func = decrement_at_point, immediate = false },
-      ["["] = { func = loop_left_bracket , immediate = false },
-      ["]"] = { func = loop_right_bracket, immediate = false },
-      ["<"] = { func = pointer_move_left , immediate = false },
-      [">"] = { func = pointer_move_right, immediate = false },
-      ["."] = { func = barf_from_array   , immediate = false },
-      [","] = { func = read_stdin        , immediate = false },
-      [":"] = { func = begin_new_word    , immediate = false },
-      [";"] = { func = end_new_word      , immediate = true  },
-      ["@"] = { func = dump_words        , immediate = false },
-   },
-}
-
 function set_contains (set, key)
    return set[key] ~= nil
 end
@@ -213,7 +189,7 @@ function parse (tokens)
    return tuples
 end
 
-function quit (input, state)
+function quit (input)
    local tokens = scan(input)
    local ir = parse(tokens)
 
@@ -246,4 +222,4 @@ end
 input = "apple [+-] apple++++"
 
 -- let's go
-quit(input, state)
+quit(input)
