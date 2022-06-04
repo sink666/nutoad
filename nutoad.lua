@@ -90,6 +90,7 @@ function scan (input)
    local in_sdef = false
    local next_is_id = false
    local open_sdef = false
+   local current_def = ""
 
    local extract = {}
    local tokens = {}
@@ -105,32 +106,28 @@ function scan (input)
    end
 
    for i = 1, #extract do
-      if extract[i] == ":" then
-         in_sdef = true
-         open_sdef = true
-      end
-
-      if set_contains(words, extract[i]) and not in_sdef then
-         tokens[i] = words[extract[i]]
-      elseif in_sdef then
+      if in_sdef then
          if extract[i] ~= ";" and not next_is_id then
-            if open_sdef then
-               next_is_id = true
-               open_sdef = false
-               tokens[i] = "sopn"
-            else
-               tokens[i] = "sdef"
-            end
+            tokens[i] = { t="sdef", name = current_def, op = words[extract[i]]}
          elseif next_is_id then
-            words[extract[i]] = { t = "scall", name = extract[i] }
-            tokens[i] = { t = "sid", name = extract[i] }
+            words[extract[i]] = { t="scall", name = current_def }
+            tokens[i] = { t="sid", name = current_def }
             next_is_id = false
          else
-            tokens[i] = "scls"
+            tokens[i] = { t="scls", name = current_def }
             in_sdef = false
          end
+      elseif set_contains(words, extract[i]) then
+         tokens[i] = words[extract[i]]
       else
-         tokens[i] = "com"
+         if extract[i] == ":" then
+            in_sdef = true
+            next_is_id = true
+            current_def = extract[i + 1]
+            tokens[i] = { t="sopn", name = current_def }
+         else
+            tokens[i] = "com"
+         end
       end
    end
 
@@ -139,36 +136,9 @@ function scan (input)
    return tokens
 end
 
-function parse (tokens)
+function parsebf (tokens)
    local tuples = {}
-   local targets = {}
 
-   --lets get the jump targets
-   local stackp = 1
-   local stack = {}
-
-   for i = 1, #tokens do
-      targets[i] = 0
-      if tokens[i] == "loopl" then
-         stack[stackp] = i
-         stackp = stackp + 1
-      end
-      if tokens[i] == "loopr" then
-         if stackp == 0 then 
-            error("unmatched ']'")
-         else
-            stackp = stackp - 1
-            targets[i] = stack[stackp]
-            targets[stack[stackp]] = i
-         end
-      end
-   end
-
-   if stackp > 1 then
-      error("unmatched '['")
-   end
-
-   --build the ir as tuples of operations and address values
    for i = 1, #tokens do
       local n = i + 1
       if tokens[i] == "inc" then
@@ -179,9 +149,23 @@ function parse (tokens)
          tuples[i] = { op = "loopl", jaddr = targets[i], naddr = n }
       elseif tokens[i] == "loopr" then
          tuples[i] = { op = "loopr", jaddr = targets[i], naddr = n }
+      elseif tokens[i] == "movel" then
+         tuples[i] = { op = "movel", naddr = n }
+      elseif tokens[i] == "mover" then
+         tuples[i] = { op = "mover", naddr = n }
+      elseif tokens[i] == "barf" then
+         tuples[i] = { op = "barf", naddr = n }
+      elseif tokens[i] == "read" then
+         tuples[i] = { op = "read", naddr = n }
+      elseif tokens[i] == "dumpm" then
+         tuples[i] = { op = "dumpm", naddr = n }
+      elseif tokens[i] == "dumpw" then
+         tuples[i] = { op = "dumpw", naddr = n }
+      elseif tokens[i] == "scall" then
+         tuples[i] = { op = "scall", sid = tokens[i].name, naddr = n }
       elseif tokens[i] == "eof" then
          tuples[i] = { op = "eof", naddr = nil }
-      else
+      elseif tokens[i] == "com" then
          tuples[i] = { op = "nop", naddr = n }
       end
    end
@@ -189,9 +173,56 @@ function parse (tokens)
    return tuples
 end
 
+function parse (tokens)
+   local tuples = {}
+   local dictionary = {}
+
+   --get the top level jump targets 
+   local targets = {}
+   local stackp = 1
+   local stack = {}
+
+   for i = 1, #tokens do
+      targets[i] = 0
+      if type(tokens[i]) == "table" and stackp > 1 then
+         if tokens[i].t == "sopn" then
+            error("words may not be defined within loops.")
+         end
+      end
+      if tokens[i] == "loopl" then
+         stack[stackp] = i
+         stackp = stackp + 1
+      end
+      if tokens[i] == "loopr" then
+         stackp = stackp - 1
+         if stackp == 0 then
+            error("unmatched ']'")
+         end
+         targets[i] = stack[stackp]
+         targets[stack[stackp]] = i
+      end
+   end
+
+   if stackp > 1 then
+      error("unmatched '['")
+   end
+
+   --build the user word dictionary
+   for i = 1, #tokens do
+      if type(tokens[i]) == "table" then
+         local tn = tokens[i].name
+         if dictionary[tn] == nil then
+            dictionary[tn] = {}
+         end
+      end
+   end
+
+   return tuples, dictionary
+end
+
 function quit (input)
    local tokens = scan(input)
-   local ir = parse(tokens)
+   local ir, dict = parse(tokens)
 
    for i = 1, #tokens do
       if type(tokens[i]) == "table" then
@@ -207,6 +238,8 @@ function quit (input)
                               i, ir[i].op, ir[i].naddr, ir[i].jaddr)
       print(t)
    end
+
+   print(unpack(dict))
    -- interpret(commands, targets, state)
    -- print("bye")
 end
@@ -220,7 +253,10 @@ end
 -- our input
 -- input = "@:ab+++;@ a#[-] :b+++;@ a#@"
 -- input = "apple +- :a+++; +-a++"
-input = "apple [+-] apple++++"
+-- input = "apple [+-] apple++++"
+-- input = "+-[+-]<>><.,@#  :a+++;a"
+-- input = " :a+++; a"
+input = ":a+++; [+-a]"
 
 -- let's go
 quit(input)
