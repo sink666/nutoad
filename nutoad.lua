@@ -1,104 +1,22 @@
-function checkvalue(v)
-   if v == 256 then
-      return 0
-   elseif v == -1 then
-      return 255
-   else
-      return v
-   end
-end
-
-function increment_at_point (s)
-   s.array[s.arrayp] = checkvalue(s.array[s.arrayp] + 1)
-end
-
-function decrement_at_point (s)
-   s.array[s.arrayp] = checkvalue(s.array[s.arrayp] - 1)
-end
-
-function pointer_move_left (s)
-   s.arrayp = s.arrayp - 1
-end
-
-function pointer_move_right (s)
-   s.arrayp = s.arrayp + 1
-end
-
-function loop_left_bracket (s, targets)
-   if s.array[s.arrayp] == 0 then
-      return targets[s.codep]
-   end
-end
-
-function loop_right_bracket (s, targets)
-   if s.array[s.arrayp] ~= 0 then
-      return targets[s.codep]
-   end
-end
-
-function barf_from_array (s)
-   io.write(string.char(s.array[s.arrayp]))
-end
-
-function read_stdin (s)
-   --read a character from input
-   local temp = io.stdin:read(1)
-   if temp == nil then
-      --if it's nil (eof) we return
-      return nil
-   else
-      temp = string.byte(temp)
-   end
-   s.array[s.arrayp] = temp
-end
-
-function dump_array_state (s)
-   local buffer = {}
-   for i = 1, 10 do
-      buffer[i] = s.array[i]
-   end
-   print(string.format("::state:: pointer loc: %d", s.arrayp))
-   print(unpack(buffer))
-end
-
-function dump_words (s)
-   print("words:")
-   -- local n
-   local words = {}
-   for k,_ in pairs(s.dictionary) do
-      -- n = n + 1
-      words[#words + 1] = k
-   end
-   print(unpack(words))
-
-end
-
-function begin_new_word (s)
-   s.interpret = false
-   s.defident = true
-end
-
-function end_new_word (s)
-   s.interpret = true
-end
-
 function set_contains (set, key)
    return set[key] ~= nil
 end
 
+nutoad_operators = {
+   symbols = ["+", "-", "<", ">", ".", ",", "#", "@"],
+   tokens  = ["inc", "dec", "movl", "movr", "barf", "read", "dumpm", "dumpw"]
+}
+
+nutoad_structures = {
+   ["loop"] = { symbols = ["[", "]"], tokens = ["loopl", "loopr"] }
+   ["defn"] = { symbols = [":", ";"], tokens = ["dopen", "dclos"] }
+}
+
 function scan (input)
-   local in_sdef = false
-   local next_is_id = false
-   local open_sdef = false
    local current_def = ""
 
    local extract = {}
    local tokens = {}
-   local words = {
-      ["+"] = "inc",   ["-"] = "dec",   ["["] = "loopl", ["]"] = "loopr",
-      ["<"] = "movel", [">"] = "mover", ["."] = "barf",  [","] = "read",
-      ["#"] = "dumpm", ["@"] = "dumpw",
-   }
 
    -- get each character and shove it into a table
    for i = 1, #input do
@@ -117,10 +35,10 @@ function scan (input)
             tokens[i] = { t="scls", name = current_def }
             in_sdef = false
          end
-      elseif set_contains(words, extract[i]) then
-         tokens[i] = words[extract[i]]
       else
-         if extract[i] == ":" then
+         if set_contains(words, extract[i]) then
+            tokens[i] = words[extract[i]]
+         elseif extract[i] == ":" then
             in_sdef = true
             next_is_id = true
             current_def = extract[i + 1]
@@ -136,49 +54,56 @@ function scan (input)
    return tokens
 end
 
-function parsebf (tokens)
+function make_tuples (tokens, targets)
    local tuples = {}
+   local basic = { "inc", "dec", "movel", "mover",
+                   "barf", "read", "dumpm", "dumpw" }
 
    for i = 1, #tokens do
       local n = i + 1
-      if tokens[i] == "inc" then
-         tuples[i] = { op = "inc", naddr = n }
-      elseif tokens[i] == "dec" then
-         tuples[i] = { op = "dec", naddr = n }
-      elseif tokens[i] == "loopl" then
-         tuples[i] = { op = "loopl", jaddr = targets[i], naddr = n }
-      elseif tokens[i] == "loopr" then
-         tuples[i] = { op = "loopr", jaddr = targets[i], naddr = n }
-      elseif tokens[i] == "movel" then
-         tuples[i] = { op = "movel", naddr = n }
-      elseif tokens[i] == "mover" then
-         tuples[i] = { op = "mover", naddr = n }
-      elseif tokens[i] == "barf" then
-         tuples[i] = { op = "barf", naddr = n }
-      elseif tokens[i] == "read" then
-         tuples[i] = { op = "read", naddr = n }
-      elseif tokens[i] == "dumpm" then
-         tuples[i] = { op = "dumpm", naddr = n }
-      elseif tokens[i] == "dumpw" then
-         tuples[i] = { op = "dumpw", naddr = n }
-      elseif tokens[i] == "scall" then
-         tuples[i] = { op = "scall", sid = tokens[i].name, naddr = n }
-      elseif tokens[i] == "eof" then
-         tuples[i] = { op = "eof", naddr = nil }
-      elseif tokens[i] == "com" then
-         tuples[i] = { op = "nop", naddr = n }
-      end
-   end
+      if set_contains(basic, tokens[i]) then
+         tuples[i] = { op = tokens[i], naddr = n }
+      elseif 
+
+
+
+   -- for i = 1, #tokens do
+   --    local n = i + 1
+   --    if tokens[i] == "inc" then
+   --       tuples[i] = { op = "inc", naddr = n }
+   --    elseif tokens[i] == "dec" then
+   --       tuples[i] = { op = "dec", naddr = n }
+   --    elseif tokens[i] == "loopl" then
+   --       tuples[i] = { op = "loopl", jaddr = targets[i], naddr = n }
+   --    elseif tokens[i] == "loopr" then
+   --       tuples[i] = { op = "loopr", jaddr = targets[i], naddr = n }
+   --    elseif tokens[i] == "movel" then
+   --       tuples[i] = { op = "movel", naddr = n }
+   --    elseif tokens[i] == "mover" then
+   --       tuples[i] = { op = "mover", naddr = n }
+   --    elseif tokens[i] == "barf" then
+   --       tuples[i] = { op = "barf", naddr = n }
+   --    elseif tokens[i] == "read" then
+   --       tuples[i] = { op = "read", naddr = n }
+   --    elseif tokens[i] == "dumpm" then
+   --       tuples[i] = { op = "dumpm", naddr = n }
+   --    elseif tokens[i] == "dumpw" then
+   --       tuples[i] = { op = "dumpw", naddr = n }
+   --    elseif tokens[i] == "scall" then
+   --       tuples[i] = { op = tokens[i].name, naddr = n }
+   --    elseif tokens[i] == "eof" then
+   --       tuples[i] = { op = "eof", naddr = nil }
+   --    elseif tokens[i] == "com" then
+   --       tuples[i] = { op = "nop", naddr = n }
+   --    end
+   -- end
 
    return tuples
 end
 
-function parse (tokens)
-   local tuples = {}
-   local dictionary = {}
-
-   --get the top level jump targets 
+function make_targets (tokens)
    local targets = {}
+
    local stackp = 1
    local stack = {}
 
@@ -207,15 +132,28 @@ function parse (tokens)
       error("unmatched '['")
    end
 
-   --build the user word dictionary
+   return targets
+end
+
+function make_dict (tokens)
+   local dict = {}
+
    for i = 1, #tokens do
       if type(tokens[i]) == "table" then
          local tn = tokens[i].name
-         if dictionary[tn] == nil then
-            dictionary[tn] = {}
+         if dict[tn] == nil then
+            dict[tn] = {}
          end
       end
    end
+
+   return dict
+end
+
+function parse (tokens)
+   local targets = make_targets(tokens)
+   local dictionary = make_dict(tokens)
+   local tuples = make_tuples(tokens, targets)
 
    return tuples, dictionary
 end
@@ -257,6 +195,7 @@ end
 -- input = "+-[+-]<>><.,@#  :a+++;a"
 -- input = " :a+++; a"
 input = ":a+++; [+-a]"
+-- input = "+++++[-]"
 
 -- let's go
 quit(input)
