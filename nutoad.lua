@@ -71,29 +71,9 @@ function parse (tokens)
    local cd_p = 1
    local tuple = {}
    local add_tuple = false
-   -- +1 to count '[', -1 to count a ']'. ~= 1 at the end == syntax error
-   local scope = 0
-   -- keep a stack of 'distances' between opening and closing braces
-   local targetstack = {}
 
    for i = 1, #tokens do
       local c_token = tokens[i].value
-
-      if scope > 0 then
-         if targetstack[scope] == nil then
-            targetstack[scope] = 0
-         end
-
-         for i=1, scope do
-            targetstack[i] = targetstack[i] + 1
-         end
-      end
-
-      if c_token == "loop_l" then
-         scope = scope + 1
-      elseif c_token == "loop_r" then
-         scope = scope - 1
-      end
 
       if val_in_set(nutoad_syntax, c_token) then -- operator?
          if c_token ~= "open_d" and c_token ~= "clos_d" then
@@ -108,9 +88,6 @@ function parse (tokens)
                add_tuple = true
             end
          elseif c_token == "open_d" then
-            if scope > 1 then
-               error("you may not open word definitions inside loops")
-            end
             if tuple.op ~= nil then
                error("you may not nest word definitions.")
             end
@@ -152,25 +129,6 @@ function parse (tokens)
          tuple = {}
          add_tuple = false
       end
-   end
-
-   if scope ~= 0 then
-      error("unbalanced loop expression; '[' or ']'")
-   end
-
-   -- now shove the targets where they need to go in the ir
-   for i=1, #ir do
-      if ir[i].x == "l" then
-         scope = scope + 1
-         ir[i].y = targetstack[scope]
-      elseif ir[i].x == "r" then
-         ir[i].y = -targetstack[scope]
-         scope = scope - 1
-      end
-   end
-   
-   for i=1, #targetstack do
-      print(string.format("pos: %s; val: %d", i, targetstack[i]))
    end
 
    return ir
@@ -219,7 +177,7 @@ function words.move (dir)
 end
 
 function words.noop ()
-   print("noop fired")
+   ;
 end
 
 function words.loop (side, target)
@@ -237,7 +195,18 @@ function words.loop (side, target)
 end
 
 function words.io (in_out)
-   
+   if in_out == "b" then -- barf from array
+      io.write(string.char(array[arrayp]))
+   elseif in_out == "r" then -- read a character of input
+      local temp = io.stdin:read(1)
+      if temp == nil then
+         -- eof?
+         return nil
+      else
+         temp = string.byte(temp)
+      end
+      array[arrayp] = temp
+   end
 end
 
 function words.def (id, ir)
@@ -259,24 +228,15 @@ function begin_interpret (ir)
    end
 end
 
-function quit (input)
+function start (input)
    local tokens = scan(input)
    local ir = parse(tokens)
    begin_interpret(ir)
 end
 
--- our input
--- input = "@:ab+++;@ a#[-] :b+++;@ a#@"
--- input = "apple +- :a+++; +-a++"
--- input = "apple [+-] apple++++"
--- input = "+-[+-]<>><.,@#  :a+++m; a"
--- input = " :+; a :b---; abc"
--- input = "+++++[-]"
--- input = "+-[]<>.,@#"
--- input = "+++++ :a+++++; a"
--- input = "@#+>+>+>+>+>+#++#  #>+#[]"
--- input = " [+++[>>>[-]+]]+"
-input = "+++++#[-]#"
+-- our input; hello world
+-- input = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."
+input = "++++++++++#"
 
 -- finally, run
-quit(input)
+start(input)
