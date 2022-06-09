@@ -28,14 +28,23 @@ CLOSED: [2022-06-02 Thu 23:33]
 CLOSED: [2022-06-02 Thu 23:33]
 *** DONE scanner spits out tokens with the operation type and position
 CLOSED: [2022-06-02 Thu 23:33]
-** TODO create a parser
-*** TODO parses the tokens, spits out an IR to execute
-** TODO create an IR
-*** need to convert tokens and data into some sort of intermediate
+** DONE create a parser
+CLOSED: [2022-06-09 Thu 16:09]
+*** DONE parses the tokens, spits out an IR to execute
+CLOSED: [2022-06-09 Thu 16:09]
+** DONE create an IR
+CLOSED: [2022-06-09 Thu 16:09]
+*** DONE need to convert tokens and data into some sort of intermediate
+CLOSED: [2022-06-09 Thu 16:09]
 nutoad only has keywords, subroutine definitions, subroutine calls and comments
-*** TODO brace semantics
-*** TODO definition semantics
-*** TODO the IR could be tuples?
-*** TODO need to execute that
+*** DONE brace semantics
+CLOSED: [2022-06-09 Thu 16:09]
+*** DONE definition semantics
+CLOSED: [2022-06-09 Thu 16:09]
+*** DONE the IR could be tuples?
+CLOSED: [2022-06-09 Thu 16:09]
+*** DONE need to execute that
+CLOSED: [2022-06-09 Thu 16:09]
+** DONE wraparound?
+CLOSED: [2022-06-09 Thu 16:09]
 ** TODO file input
-** TODO wraparound?
