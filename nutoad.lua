@@ -15,7 +15,7 @@ end
 
 nutoad_syntax = {
    ["+"] = "add",    ["-"] = "sub",    ["<"] = "move_l", [">"] = "move_r",
-   ["."] = "barf",   [","] = "read",   ["#"] = "dump_m", ["@"] = "dump_w",
+   ["."] = "barf",   [","] = "scry",   ["#"] = "dump_m", ["@"] = "dump_w",
    ["["] = "loop_l", ["]"] = "loop_r", [":"] = "open_d", [";"] = "clos_d",
 }
 
@@ -44,7 +44,7 @@ end
 function make_tuple (token, argx, argy)
    local tuple_prototypes = {
       ["barf"]   = { op = "io"  , x = "b" , y = nil  },
-      ["read"]   = { op = "io"  , x = "r" , y = nil  },
+      ["scry"]   = { op = "io"  , x = "s" , y = nil  },
       ["add"]    = { op = "math", x =  1  , y = nil  },
       ["sub"]    = { op = "math", x = -1  , y = nil  },
       ["loop_l"] = { op = "loop", x = "l" , y = 0    },
@@ -73,13 +73,14 @@ function make_targets (ir)
          listp = #list + 1
          list[listp] = { opos = i, cpos = 0, closed = false }
       end
-
+      
       if ir[i].x == 'r' then
-         for i = #list, 1, -1 do
+         for j = #list, 1, -1 do
             if list[listp].closed then
                listp = listp - 1
             end
          end
+
          list[listp].closed = true
          list[listp].cpos = i
       end
@@ -88,9 +89,8 @@ function make_targets (ir)
    for i=1, #list do
       local open  = list[i].opos
       local close = list[i].cpos
-      ir[open].y = close + 1
+      ir[open].y = close
       ir[close].y = open
-      
    end
 
    return ir
@@ -209,7 +209,14 @@ function words.math (amount)
 end
 
 function words.move (dir)
-   arrayp = arrayp + dir
+   local test = arrayp + dir
+   if test < 1 then
+      arrayp = 30000
+   elseif test > 30000 then
+      arrayp = 1
+   else
+      arrayp = arrayp + dir
+   end
 end
 
 function words.noop ()
@@ -231,7 +238,7 @@ end
 function words.io (in_out)
    if in_out == "b" then -- barf from array
       io.write(string.char(array[arrayp]))
-   elseif in_out == "r" then -- read a character of input
+   elseif in_out == "s" then -- scry (read) a character of input
       local temp = io.stdin:read(1)
       if temp == nil then
          -- eof?
@@ -257,6 +264,7 @@ function begin_interpret (ir)
       local op = ir[codep].op
       local argx = ir[codep].x
       local argy = ir[codep].y
+      -- print(string.format("%d, %s, %d", codep, op, arrayp))
       words[op](argx, argy) -- this does the word
       codep = codep + 1
    end
@@ -269,7 +277,9 @@ function start (input)
 end
 
 -- our input; hello world
-input = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."
+-- input = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."
+-- another input; outputs 'H'
+-- input = '[]++++++++++[>>+>+>++++++[<<+<+++>>>-]<<<<-]"A*$"B?C![D>>+<<]>[>>]<<<<[>++<[-]]>.>.'
 
 -- finally, run
 start(input)
