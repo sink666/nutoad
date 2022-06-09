@@ -64,7 +64,40 @@ function make_tuple (token, argx, argy)
    end
 end
 
+function make_targets (ir)
+   local list = {}
+   local listp = 0
+
+   for i=1, #ir do
+      if ir[i].x == 'l' then
+         listp = #list + 1
+         list[listp] = { opos = i, cpos = 0, closed = false }
+      end
+
+      if ir[i].x == 'r' then
+         for i = #list, 1, -1 do
+            if list[listp].closed then
+               listp = listp - 1
+            end
+         end
+         list[listp].closed = true
+         list[listp].cpos = i
+      end
+   end
+
+   for i=1, #list do
+      local open  = list[i].opos
+      local close = list[i].cpos
+      ir[open].y = close + 1
+      ir[close].y = open
+      
+   end
+
+   return ir
+end
+
 function parse (tokens)
+   --first pass, do everything except loop targets
    local ir = {}
    local ir_p = 1
    local words = {}
@@ -131,6 +164,9 @@ function parse (tokens)
       end
    end
 
+   --second pass, get + set the loop targets inc. within definitions
+   ir = make_targets(ir)
+
    return ir
 end
 
@@ -183,13 +219,11 @@ end
 function words.loop (side, target)
    if side == "l" then
       if array[arrayp] == 0 then
-         -- print(codep + target)
-         codep = codep + target
+         codep = target
       end
    elseif side == "r" then
       if array[arrayp] ~= 0 then
-         -- print(codep + target)
-         codep = codep + target
+         codep = target
       end
    end
 end
@@ -235,8 +269,7 @@ function start (input)
 end
 
 -- our input; hello world
--- input = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."
-input = "++++++++++#"
+input = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."
 
 -- finally, run
 start(input)
