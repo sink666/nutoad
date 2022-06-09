@@ -68,6 +68,7 @@ function make_targets (ir)
    local list = {}
    local listp = 0
 
+   --handle everything that isnt a def
    for i=1, #ir do
       if ir[i].x == 'l' then
          listp = #list + 1
@@ -91,6 +92,16 @@ function make_targets (ir)
       local close = list[i].cpos
       ir[open].y = close
       ir[close].y = open
+   end
+
+   --go over it one last time, find the defs, generate their targets
+   for i=1, #ir do
+      if ir[i].op == "def" then
+         local def_ir = ir[i].y
+         
+         def_ir = make_targets(def_ir)
+         ir[i].y = def_ir
+      end
    end
 
    return ir
@@ -174,7 +185,7 @@ end
 words = {}
 array = {}
 arrayp = 1 -- currently addressed array address
-codep = 1 -- currently addressed instruction
+g_codep = 1 -- currently addressed instruction
 
 -- recommended array size
 for i = 1, 30000 do
@@ -226,11 +237,11 @@ end
 function words.loop (side, target)
    if side == "l" then
       if array[arrayp] == 0 then
-         codep = target
+         return target
       end
    elseif side == "r" then
       if array[arrayp] ~= 0 then
-         codep = target
+         return target
       end
    end
 end
@@ -251,22 +262,41 @@ function words.io (in_out)
 end
 
 function words.def (id, ir)
-
+   words[id] = ir
 end
 
 function words.call (id)
-
+   local call_ir = words[id]
+   begin_interpret(call_ir, true)
 end
 
-function begin_interpret (ir)
+function begin_interpret (ir, in_call)
    -- ir structure is ir[i](.op|.x|.y)
-   while codep < #ir + 1 do
-      local op = ir[codep].op
-      local argx = ir[codep].x
-      local argy = ir[codep].y
-      -- print(string.format("%d, %s, %d", codep, op, arrayp))
-      words[op](argx, argy) -- this does the word
-      codep = codep + 1
+   -- if we're in a call we just do the loop but with a local codepointer
+   if in_call then
+      local call_codep = 1
+      while call_codep < #ir + 1 do
+         local op = ir[call_codep].op
+         local argx = ir[call_codep].x
+         local argy = ir[call_codep].y
+         local ret = words[op](argx, argy)
+         if ret ~= nil then
+            call_codep = ret
+         end
+         call_codep = call_codep + 1
+      end
+   else
+      while g_codep < #ir + 1 do
+         local op = ir[g_codep].op
+         local argx = ir[g_codep].x
+         local argy = ir[g_codep].y
+         -- print(string.format("%d, %s, %d", codep, op, arrayp))
+         local ret = words[op](argx, argy) -- this does the word
+         if ret ~= nil then
+            g_codep = ret
+         end
+         g_codep = g_codep + 1
+      end
    end
 end
 
@@ -280,6 +310,6 @@ end
 -- input = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."
 -- another input; outputs 'H'
 -- input = '[]++++++++++[>>+>+>++++++[<<+<+++>>>-]<<<<-]"A*$"B?C![D>>+<<]>[>>]<<<<[>++<[-]]>.>.'
+-- input = ":a[-];+++++#>+++++#a<a#"
 
--- finally, run
 start(input)
